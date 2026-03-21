@@ -55,7 +55,6 @@ def send_text(phone, text):
     requests.post(url, json=payload, headers=headers)
 
 def send_buttons(phone, body, buttons):
-    """Отправить сообщение с кнопками (до 3 кнопок)"""
     url = f"https://graph.facebook.com/v19.0/{PHONE_ID}/messages"
     headers = {"Authorization": f"Bearer {WA_TOKEN}", "Content-Type": "application/json"}
     payload = {
@@ -73,7 +72,8 @@ def send_buttons(phone, body, buttons):
             }
         }
     }
-    requests.post(url, json=payload, headers=headers)
+    r = requests.post(url, json=payload, headers=headers)
+    print(f"send_buttons response: {r.status_code} {r.text}")
 
 def send_list(phone, body, button_label, sections):
     """Отправить список с разделами (для каталога)"""
