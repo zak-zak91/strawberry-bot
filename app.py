@@ -455,6 +455,7 @@ def webhook():
 
         msg   = value["messages"][0]
         phone = msg["from"]
+        print(f"Incoming phone: {phone}")
 
         # Текстовое сообщение
         if msg["type"] == "text":
