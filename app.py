@@ -7,6 +7,12 @@ from datetime import datetime
 
 app = Flask(__name__)
 
+def normalize_phone(phone):
+    """Убирает лишнюю 8 для казахских номеров"""
+    if phone.startswith("78") and len(phone) == 12:
+        phone = "7" + phone[2:]
+    return phone
+
 # ─── НАСТРОЙКИ (заменить на свои) ───────────────────────────────
 VERIFY_TOKEN     = "strawberry_bot_2024"          # придумай сам
 WA_TOKEN         = os.getenv("WA_TOKEN", "ВАШ_WHATSAPP_TOKEN")
@@ -454,7 +460,7 @@ def webhook():
             return jsonify({"status": "ok"})
 
         msg   = value["messages"][0]
-        phone = msg["from"]
+        phone = normalize_phone(msg["from"])
         print(f"Incoming phone: {phone}")
 
         # Текстовое сообщение
