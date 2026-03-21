@@ -8,9 +8,10 @@ from datetime import datetime
 app = Flask(__name__)
 
 def normalize_phone(phone):
-    """Убирает лишнюю 8 для казахских номеров"""
-    if phone.startswith("78") and len(phone) == 12:
-        phone = "7" + phone[2:]
+    """Нормализация для казахских номеров"""
+    if phone.startswith("77") and len(phone) == 11:
+        # Вставляем 8 после 7: 77073648466 → 787073648466
+        phone = "78" + phone[1:]
     return phone
 
 # ─── НАСТРОЙКИ (заменить на свои) ───────────────────────────────
