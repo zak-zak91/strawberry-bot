@@ -10,35 +10,33 @@ app = Flask(__name__)
 def normalize_phone(phone):
     """Нормализация для казахских номеров"""
     if phone.startswith("77") and len(phone) == 11:
-        # Вставляем 8 после 7: 77073648466 → 787073648466
         phone = "78" + phone[1:]
     return phone
 
 # ─── НАСТРОЙКИ (заменить на свои) ───────────────────────────────
-VERIFY_TOKEN     = "strawberry_bot_2024"          # придумай сам
+VERIFY_TOKEN     = "strawberry_bot_2024"
 WA_TOKEN         = os.getenv("WA_TOKEN", "ВАШ_WHATSAPP_TOKEN")
 PHONE_ID         = os.getenv("PHONE_ID", "ВАШ_PHONE_NUMBER_ID")
 CLAUDE_API_KEY   = os.getenv("CLAUDE_API_KEY", "ВАШ_CLAUDE_API_KEY")
 TG_BOT_TOKEN     = os.getenv("TG_BOT_TOKEN", "ВАШ_TELEGRAM_BOT_TOKEN")
-TG_MANAGER_ID    = os.getenv("TG_MANAGER_ID", "ВАШ_TELEGRAM_CHAT_ID")  # твой chat_id в Telegram
+TG_MANAGER_ID    = os.getenv("TG_MANAGER_ID", "ВАШ_TELEGRAM_CHAT_ID")
 # ────────────────────────────────────────────────────────────────
 
 claude = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
 
 # ─── КАТАЛОГ ТОВАРОВ ────────────────────────────────────────────
 CATALOG = [
-    {"id": 1, "name": "Клубника в белом шоколаде",       "name_kz": "Ақ шоколадтағы құлпынай",       "price": 2500, "unit": "500г",      "photo": "https://ibb.co.com/hFDffGc1"},
-    {"id": 2, "name": "Клубника в тёмном шоколаде",      "name_kz": "Қара шоколадтағы құлпынай",     "price": 2500, "unit": "500г",      "photo": "https://ibb.co.com/7dkqmBxH"},
-    {"id": 3, "name": "Клубника в молочном шоколаде",    "name_kz": "Сүт шоколадтағы құлпынай",      "price": 2500, "unit": "500г",      "photo": "https://ibb.co.com/1fp5Z14n"},
-    {"id": 4, "name": "Ассорти (3 вида шоколада)",       "name_kz": "Ассорти (3 түрлі шоколад)",     "price": 2800, "unit": "500г",      "photo": "https://ibb.co.com/GQKKtFYN"},
-    {"id": 5, "name": "Подарочный бокс S",                "name_kz": "Сыйлық бокс S",                 "price": 4500, "unit": "12 шт",    "photo": "https://ibb.co.com/j92gL7hY"},
-    {"id": 6, "name": "Подарочный бокс M",                "name_kz": "Сыйлық бокс M",                 "price": 7500, "unit": "24 шт",    "photo": "https://ibb.co.com/fzn4hg0K"},
-    {"id": 7, "name": "Подарочный бокс L",                "name_kz": "Сыйлық бокс L",                 "price": 12000,"unit": "36 шт",    "photo": "https://ibb.co.com/DgfGCBSg"},
-    {"id": 8, "name": "Корпоративный заказ (от 50 шт)",  "name_kz": "Корпоративтік тапсырыс (50+)", "price": None,  "unit": "под запрос","photo": "https://ibb.co.com/xdjcHFm"},
+    {"id": 1, "name": "Клубника в белом шоколаде",       "name_kz": "Ақ шоколадтағы құлпынай",       "price": 2500, "unit": "500г",      "photo": "https://i.ibb.co/hFDffGc1/photo1.jpg"},
+    {"id": 2, "name": "Клубника в тёмном шоколаде",      "name_kz": "Қара шоколадтағы құлпынай",     "price": 2500, "unit": "500г",      "photo": "https://i.ibb.co/7dkqmBxH/photo2.jpg"},
+    {"id": 3, "name": "Клубника в молочном шоколаде",    "name_kz": "Сүт шоколадтағы құлпынай",      "price": 2500, "unit": "500г",      "photo": "https://i.ibb.co/1fp5Z14n/photo3.jpg"},
+    {"id": 4, "name": "Ассорти (3 вида шоколада)",       "name_kz": "Ассорти (3 түрлі шоколад)",     "price": 2800, "unit": "500г",      "photo": "https://i.ibb.co/GQKKtFYN/photo4.jpg"},
+    {"id": 5, "name": "Подарочный бокс S",                "name_kz": "Сыйлық бокс S",                 "price": 4500, "unit": "12 шт",    "photo": "https://i.ibb.co/j92gL7hY/photo5.jpg"},
+    {"id": 6, "name": "Подарочный бокс M",                "name_kz": "Сыйлық бокс M",                 "price": 7500, "unit": "24 шт",    "photo": "https://i.ibb.co/fzn4hg0K/photo6.jpg"},
+    {"id": 7, "name": "Подарочный бокс L",                "name_kz": "Сыйлық бокс L",                 "price": 12000,"unit": "36 шт",    "photo": "https://i.ibb.co/DgfGCBSg/photo7.jpg"},
+    {"id": 8, "name": "Корпоративный заказ (от 50 шт)",  "name_kz": "Корпоративтік тапсырыс (50+)", "price": None,  "unit": "под запрос","photo": "https://i.ibb.co/xdjcHFm/photo8.jpg"},
 ]
 
 # ─── СОСТОЯНИЯ ДИАЛОГОВ ─────────────────────────────────────────
-# Структура: { phone: { "state": "...", "order": {...}, "lang": "ru" } }
 sessions = {}
 
 def get_session(phone):
@@ -101,7 +99,8 @@ def send_list(phone, body, button_label, sections):
     }
     requests.post(url, json=payload, headers=headers)
 
-    def send_image_with_buttons(phone, image_url, caption, buttons):
+def send_image_with_buttons(phone, image_url, caption, buttons):
+    """Отправить фото с подписью и кнопками"""
     url = f"https://graph.facebook.com/v19.0/{PHONE_ID}/messages"
     headers = {"Authorization": f"Bearer {WA_TOKEN}", "Content-Type": "application/json"}
     payload = {
@@ -123,7 +122,8 @@ def send_list(phone, body, button_label, sections):
             }
         }
     }
-    requests.post(url, json=payload, headers=headers)
+    r = requests.post(url, json=payload, headers=headers)
+    print(f"send_image_with_buttons response: {r.status_code} {r.text}")
 
 # ─── ГЛАВНОЕ МЕНЮ ───────────────────────────────────────────────
 def send_main_menu(phone, lang="ru"):
@@ -152,7 +152,7 @@ def send_catalog(phone, lang="ru"):
         price_str = f"{item['price']} тг" if item["price"] else "по запросу"
         items.append({
             "id": f"cat_{item['id']}",
-            "title": name[:24],  # WA ограничение 24 символа
+            "title": name[:24],
             "description": f"{price_str} / {item['unit']}"
         })
 
@@ -293,7 +293,6 @@ def finalize_order(phone, lang="ru"):
     else:
         send_text(phone, "🎉 Тапсырыс қабылданды! Менеджер 15 минут ішінде хабарласады.\n\nБізді таңдағаныңызға рахмет! 🍓")
 
-    # Сбрасываем заказ
     sessions[phone]["order"] = {}
     set_state(phone, "start")
 
@@ -354,25 +353,17 @@ def get_ai_response(question, lang="ru"):
     return response.content[0].text
 
 # ─── ОПРЕДЕЛЕНИЕ ЯЗЫКА ──────────────────────────────────────────
-# ─── ОПРЕДЕЛЕНИЕ ЯЗЫКА ──────────────────────────────────────────
 def detect_lang(text):
-    """
-    Определяет язык по символам и ключевым словам.
-    Возвращает 'kz' если казахский, иначе 'ru'.
-    """
     text_lower = text.lower()
 
-    # Явные казахские символы — однозначно KZ
     kz_chars = set("әіңғүұқөһ")
     if any(c in kz_chars for c in text_lower):
         return "kz"
 
-    # Явные русские символы (ё, ъ, ы в начале слова) — скорее RU
     ru_specific = set("ёъ")
     if any(c in ru_specific for c in text_lower):
         return "ru"
 
-    # Ключевые слова-маркеры
     kz_words = {"сәлем", "рахмет", "иә", "жоқ", "қалай", "бар", "жақсы",
                 "тапсырыс", "каталог", "баға", "алу", "беру"}
     ru_words = {"привет", "спасибо", "да", "нет", "как", "есть", "хорошо",
@@ -387,9 +378,7 @@ def detect_lang(text):
     if ru_hits > kz_hits:
         return "ru"
 
-    # Если не определили — оставляем текущий язык сессии (не меняем)
     return None
-
 
 # ─── ОСНОВНАЯ ЛОГИКА ДИАЛОГА ────────────────────────────────────
 def handle_message(phone, text=None, button_id=None):
@@ -397,14 +386,11 @@ def handle_message(phone, text=None, button_id=None):
     state   = session["state"]
     lang    = session.get("lang", "ru")
 
-    # Определяем язык только по тексту, и только если определилось однозначно
     if text:
         detected = detect_lang(text)
-        if detected is not None:          # ← не перезаписываем если None
+        if detected is not None:
             session["lang"] = detected
             lang = detected
-
-    # ... остальной код handle_message без изменений
 
     # Обработка кнопок
     if button_id:
@@ -491,7 +477,6 @@ def handle_message(phone, text=None, button_id=None):
         ai_reply = get_ai_response(text, lang)
         send_text(phone, ai_reply)
 
-        # После AI ответа предлагаем меню
         if lang == "ru":
             send_buttons(phone, "Могу ещё чем-то помочь?", [
                 {"id": "catalog", "title": "📦 Каталог"},
@@ -525,11 +510,9 @@ def webhook():
         phone = normalize_phone(msg["from"])
         print(f"Incoming phone: {phone}")
 
-        # Текстовое сообщение
         if msg["type"] == "text":
             handle_message(phone, text=msg["text"]["body"])
 
-        # Нажатие кнопки или выбор из списка
         elif msg["type"] == "interactive":
             itype = msg["interactive"]["type"]
             if itype == "button_reply":
