@@ -326,12 +326,42 @@ def get_ai_response(question, lang="ru"):
     return response.content[0].text
 
 # ─── ОПРЕДЕЛЕНИЕ ЯЗЫКА ──────────────────────────────────────────
+# ─── ОПРЕДЕЛЕНИЕ ЯЗЫКА ──────────────────────────────────────────
 def detect_lang(text):
-    """Простое определение — если есть казахские буквы, то KZ"""
+    """
+    Определяет язык по символам и ключевым словам.
+    Возвращает 'kz' если казахский, иначе 'ru'.
+    """
+    text_lower = text.lower()
+
+    # Явные казахские символы — однозначно KZ
     kz_chars = set("әіңғүұқөһ")
-    if any(c in kz_chars for c in text.lower()):
+    if any(c in kz_chars for c in text_lower):
         return "kz"
-    return "ru"
+
+    # Явные русские символы (ё, ъ, ы в начале слова) — скорее RU
+    ru_specific = set("ёъ")
+    if any(c in ru_specific for c in text_lower):
+        return "ru"
+
+    # Ключевые слова-маркеры
+    kz_words = {"сәлем", "рахмет", "иә", "жоқ", "қалай", "бар", "жақсы",
+                "тапсырыс", "каталог", "баға", "алу", "беру"}
+    ru_words = {"привет", "спасибо", "да", "нет", "как", "есть", "хорошо",
+                "заказ", "каталог", "цена", "купить", "доставка"}
+
+    words = set(text_lower.split())
+    kz_hits = len(words & kz_words)
+    ru_hits = len(words & ru_words)
+
+    if kz_hits > ru_hits:
+        return "kz"
+    if ru_hits > kz_hits:
+        return "ru"
+
+    # Если не определили — оставляем текущий язык сессии (не меняем)
+    return None
+
 
 # ─── ОСНОВНАЯ ЛОГИКА ДИАЛОГА ────────────────────────────────────
 def handle_message(phone, text=None, button_id=None):
@@ -339,11 +369,14 @@ def handle_message(phone, text=None, button_id=None):
     state   = session["state"]
     lang    = session.get("lang", "ru")
 
-    # Определяем язык по тексту
+    # Определяем язык только по тексту, и только если определилось однозначно
     if text:
         detected = detect_lang(text)
-        session["lang"] = detected
-        lang = detected
+        if detected is not None:          # ← не перезаписываем если None
+            session["lang"] = detected
+            lang = detected
+
+    # ... остальной код handle_message без изменений
 
     # Обработка кнопок
     if button_id:
