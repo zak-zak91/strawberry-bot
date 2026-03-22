@@ -27,14 +27,14 @@ claude = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
 
 # ─── КАТАЛОГ ТОВАРОВ ────────────────────────────────────────────
 CATALOG = [
-    {"id": 1, "name": "Клубника в белом шоколаде",       "name_kz": "Ақ шоколадтағы құлпынай",       "price": 2500, "unit": "500г"},
-    {"id": 2, "name": "Клубника в тёмном шоколаде",      "name_kz": "Қара шоколадтағы құлпынай",     "price": 2500, "unit": "500г"},
-    {"id": 3, "name": "Клубника в молочном шоколаде",    "name_kz": "Сүт шоколадтағы құлпынай",      "price": 2500, "unit": "500г"},
-    {"id": 4, "name": "Ассорти (3 вида шоколада)",       "name_kz": "Ассорти (3 түрлі шоколад)",     "price": 2800, "unit": "500г"},
-    {"id": 5, "name": "Подарочный бокс S",                "name_kz": "Сыйлық бокс S",                 "price": 4500, "unit": "12 шт"},
-    {"id": 6, "name": "Подарочный бокс M",                "name_kz": "Сыйлық бокс M",                 "price": 7500, "unit": "24 шт"},
-    {"id": 7, "name": "Подарочный бокс L",                "name_kz": "Сыйлық бокс L",                 "price": 12000, "unit": "36 шт"},
-    {"id": 8, "name": "Корпоративный заказ (от 50 шт)",  "name_kz": "Корпоративтік тапсырыс (50+)", "price": None,  "unit": "под запрос"},
+    {"id": 1, "name": "Клубника в белом шоколаде",       "name_kz": "Ақ шоколадтағы құлпынай",       "price": 2500, "unit": "500г",      "photo": "https://ibb.co.com/hFDffGc1"},
+    {"id": 2, "name": "Клубника в тёмном шоколаде",      "name_kz": "Қара шоколадтағы құлпынай",     "price": 2500, "unit": "500г",      "photo": "https://ibb.co.com/7dkqmBxH"},
+    {"id": 3, "name": "Клубника в молочном шоколаде",    "name_kz": "Сүт шоколадтағы құлпынай",      "price": 2500, "unit": "500г",      "photo": "https://ibb.co.com/1fp5Z14n"},
+    {"id": 4, "name": "Ассорти (3 вида шоколада)",       "name_kz": "Ассорти (3 түрлі шоколад)",     "price": 2800, "unit": "500г",      "photo": "https://ibb.co.com/GQKKtFYN"},
+    {"id": 5, "name": "Подарочный бокс S",                "name_kz": "Сыйлық бокс S",                 "price": 4500, "unit": "12 шт",    "photo": "https://ibb.co.com/j92gL7hY"},
+    {"id": 6, "name": "Подарочный бокс M",                "name_kz": "Сыйлық бокс M",                 "price": 7500, "unit": "24 шт",    "photo": "https://ibb.co.com/fzn4hg0K"},
+    {"id": 7, "name": "Подарочный бокс L",                "name_kz": "Сыйлық бокс L",                 "price": 12000,"unit": "36 шт",    "photo": "https://ibb.co.com/DgfGCBSg"},
+    {"id": 8, "name": "Корпоративный заказ (от 50 шт)",  "name_kz": "Корпоративтік тапсырыс (50+)", "price": None,  "unit": "под запрос","photo": "https://ibb.co.com/xdjcHFm"},
 ]
 
 # ─── СОСТОЯНИЯ ДИАЛОГОВ ─────────────────────────────────────────
@@ -101,6 +101,30 @@ def send_list(phone, body, button_label, sections):
     }
     requests.post(url, json=payload, headers=headers)
 
+    def send_image_with_buttons(phone, image_url, caption, buttons):
+    url = f"https://graph.facebook.com/v19.0/{PHONE_ID}/messages"
+    headers = {"Authorization": f"Bearer {WA_TOKEN}", "Content-Type": "application/json"}
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": phone,
+        "type": "interactive",
+        "interactive": {
+            "type": "button",
+            "header": {
+                "type": "image",
+                "image": {"link": image_url}
+            },
+            "body": {"text": caption},
+            "action": {
+                "buttons": [
+                    {"type": "reply", "reply": {"id": btn["id"], "title": btn["title"]}}
+                    for btn in buttons
+                ]
+            }
+        }
+    }
+    requests.post(url, json=payload, headers=headers)
+
 # ─── ГЛАВНОЕ МЕНЮ ───────────────────────────────────────────────
 def send_main_menu(phone, lang="ru"):
     if lang == "ru":
@@ -143,24 +167,28 @@ def send_item_detail(phone, item_id, lang="ru"):
     item = next((i for i in CATALOG if i["id"] == item_id), None)
     if not item:
         return
-    name = item["name"] if lang == "ru" else item["name_kz"]
-    price_str = f"{item['price']} тг" if item["price"] else "уточните у менеджера"
+
+    name      = item["name"] if lang == "ru" else item["name_kz"]
+    price_str = f"{item['price']} тг" if item["price"] else ("уточните у менеджера" if lang == "ru" else "менеджерден сұраңыз")
+    photo_url = item.get("photo")
 
     if lang == "ru":
-        text = f"*{name}*\n\n💰 Цена: {price_str}\n📦 Объём: {item['unit']}\n\nХотите заказать?"
+        caption = f"*{name}*\n\n💰 Цена: {price_str}\n📦 Объём: {item['unit']}\n\nХотите заказать?"
         buttons = [
             {"id": f"buy_{item['id']}", "title": "🛒 Заказать"},
             {"id": "catalog",           "title": "◀️ Назад"},
-            {"id": "main_menu",         "title": "🏠 Главное меню"},
         ]
     else:
-        text = f"*{name}*\n\n💰 Баға: {price_str}\n📦 Көлемі: {item['unit']}\n\nТапсырыс бергіңіз келе ме?"
+        caption = f"*{name}*\n\n💰 Баға: {price_str}\n📦 Көлемі: {item['unit']}\n\nТапсырыс бергіңіз келе ме?"
         buttons = [
             {"id": f"buy_{item['id']}", "title": "🛒 Тапсырыс"},
             {"id": "catalog",           "title": "◀️ Артқа"},
-            {"id": "main_menu",         "title": "🏠 Басты мәзір"},
         ]
-    send_buttons(phone, text, buttons)
+
+    if photo_url:
+        send_image_with_buttons(phone, photo_url, caption, buttons)
+    else:
+        send_buttons(phone, caption, buttons)
 
 # ─── СБОР ЗАКАЗА ────────────────────────────────────────────────
 def start_order(phone, lang="ru", item_id=None):
