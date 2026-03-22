@@ -13,30 +13,58 @@ def normalize_phone(phone):
         phone = "78" + phone[1:]
     return phone
 
-# ─── НАСТРОЙКИ (заменить на свои) ───────────────────────────────
+# ─── НАСТРОЙКИ ───────────────────────────────────────────────────
 VERIFY_TOKEN     = "strawberry_bot_2024"
 WA_TOKEN         = os.getenv("WA_TOKEN", "ВАШ_WHATSAPP_TOKEN")
 PHONE_ID         = os.getenv("PHONE_ID", "ВАШ_PHONE_NUMBER_ID")
 CLAUDE_API_KEY   = os.getenv("CLAUDE_API_KEY", "ВАШ_CLAUDE_API_KEY")
 TG_BOT_TOKEN     = os.getenv("TG_BOT_TOKEN", "ВАШ_TELEGRAM_BOT_TOKEN")
 TG_MANAGER_ID    = os.getenv("TG_MANAGER_ID", "ВАШ_TELEGRAM_CHAT_ID")
-# ────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────
 
 claude = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
 
-# ─── КАТАЛОГ ТОВАРОВ ────────────────────────────────────────────
+# ─── КАТАЛОГ ТОВАРОВ ─────────────────────────────────────────────
 CATALOG = [
-    {"id": 1, "name": "Клубника в белом шоколаде",       "name_kz": "Ақ шоколадтағы құлпынай",       "price": 2500, "unit": "500г",      "photo": "https://i.ibb.co/hFDffGc1/photo1.jpg"},
-    {"id": 2, "name": "Клубника в тёмном шоколаде",      "name_kz": "Қара шоколадтағы құлпынай",     "price": 2500, "unit": "500г",      "photo": "https://i.ibb.co/7dkqmBxH/photo2.jpg"},
-    {"id": 3, "name": "Клубника в молочном шоколаде",    "name_kz": "Сүт шоколадтағы құлпынай",      "price": 2500, "unit": "500г",      "photo": "https://i.ibb.co/1fp5Z14n/photo3.jpg"},
-    {"id": 4, "name": "Ассорти (3 вида шоколада)",       "name_kz": "Ассорти (3 түрлі шоколад)",     "price": 2800, "unit": "500г",      "photo": "https://i.ibb.co/GQKKtFYN/photo4.jpg"},
-    {"id": 5, "name": "Подарочный бокс S",                "name_kz": "Сыйлық бокс S",                 "price": 4500, "unit": "12 шт",    "photo": "https://i.ibb.co/j92gL7hY/photo5.jpg"},
-    {"id": 6, "name": "Подарочный бокс M",                "name_kz": "Сыйлық бокс M",                 "price": 7500, "unit": "24 шт",    "photo": "https://i.ibb.co/fzn4hg0K/photo6.jpg"},
-    {"id": 7, "name": "Подарочный бокс L",                "name_kz": "Сыйлық бокс L",                 "price": 12000,"unit": "36 шт",    "photo": "https://i.ibb.co/DgfGCBSg/photo7.jpg"},
-    {"id": 8, "name": "Корпоративный заказ (от 50 шт)",  "name_kz": "Корпоративтік тапсырыс (50+)", "price": None,  "unit": "под запрос","photo": "https://i.ibb.co/xdjcHFm/photo8.jpg"},
+    {"id": 1, "name": "Клубника в белом шоколаде",       "name_kz": "Ақ шоколадтағы құлпынай",       "price": 2500,  "unit": "500г",       "photo": "https://i.ibb.co/hFDffGc1/photo1.jpg"},
+    {"id": 2, "name": "Клубника в тёмном шоколаде",      "name_kz": "Қара шоколадтағы құлпынай",     "price": 2500,  "unit": "500г",       "photo": "https://i.ibb.co/7dkqmBxH/photo2.jpg"},
+    {"id": 3, "name": "Клубника в молочном шоколаде",    "name_kz": "Сүт шоколадтағы құлпынай",      "price": 2500,  "unit": "500г",       "photo": "https://i.ibb.co/1fp5Z14n/photo3.jpg"},
+    {"id": 4, "name": "Ассорти (3 вида шоколада)",       "name_kz": "Ассорти (3 түрлі шоколад)",     "price": 2800,  "unit": "500г",       "photo": "https://i.ibb.co/GQKKtFYN/photo4.jpg"},
+    {"id": 5, "name": "Подарочный бокс S",                "name_kz": "Сыйлық бокс S",                 "price": 4500,  "unit": "12 шт",      "photo": "https://i.ibb.co/j92gL7hY/photo5.jpg"},
+    {"id": 6, "name": "Подарочный бокс M",                "name_kz": "Сыйлық бокс M",                 "price": 7500,  "unit": "24 шт",      "photo": "https://i.ibb.co/fzn4hg0K/photo6.jpg"},
+    {"id": 7, "name": "Подарочный бокс L",                "name_kz": "Сыйлық бокс L",                 "price": 12000, "unit": "36 шт",      "photo": "https://i.ibb.co/DgfGCBSg/photo7.jpg"},
+    {"id": 8, "name": "Корпоративный заказ (от 50 шт)",  "name_kz": "Корпоративтік тапсырыс (50+)", "price": None,   "unit": "под запрос", "photo": "https://i.ibb.co/xdjcHFm/photo8.jpg"},
 ]
 
-# ─── СОСТОЯНИЯ ДИАЛОГОВ ─────────────────────────────────────────
+# ─── ЦЕНОВЫЕ КАТЕГОРИИ ───────────────────────────────────────────
+PRICE_CATEGORIES = [
+    {
+        "id":       "price_1",
+        "title":    "💚 До 2 600 тг",
+        "title_kz": "💚 2 600 тг дейін",
+        "filter":   lambda p: p is not None and p <= 2600,
+    },
+    {
+        "id":       "price_2",
+        "title":    "💛 2 600 — 3 000 тг",
+        "title_kz": "💛 2 600 — 3 000 тг",
+        "filter":   lambda p: p is not None and 2600 < p <= 3000,
+    },
+    {
+        "id":       "price_3",
+        "title":    "🧡 3 000 — 8 000 тг",
+        "title_kz": "🧡 3 000 — 8 000 тг",
+        "filter":   lambda p: p is not None and 3000 < p <= 8000,
+    },
+    {
+        "id":       "price_4",
+        "title":    "❤️ От 8 000 тг",
+        "title_kz": "❤️ 8 000 тг жоғары",
+        "filter":   lambda p: p is None or p > 8000,
+    },
+]
+
+# ─── СОСТОЯНИЯ ДИАЛОГОВ ──────────────────────────────────────────
 sessions = {}
 
 def get_session(phone):
@@ -47,7 +75,7 @@ def get_session(phone):
 def set_state(phone, state):
     sessions[phone]["state"] = state
 
-# ─── ОТПРАВКА СООБЩЕНИЙ ─────────────────────────────────────────
+# ─── ОТПРАВКА СООБЩЕНИЙ ──────────────────────────────────────────
 def send_text(phone, text):
     url = f"https://graph.facebook.com/v19.0/{PHONE_ID}/messages"
     headers = {"Authorization": f"Bearer {WA_TOKEN}", "Content-Type": "application/json"}
@@ -81,7 +109,7 @@ def send_buttons(phone, body, buttons):
     print(f"send_buttons response: {r.status_code} {r.text}")
 
 def send_list(phone, body, button_label, sections):
-    """Отправить список с разделами (для каталога)"""
+    """Отправить список с разделами"""
     url = f"https://graph.facebook.com/v19.0/{PHONE_ID}/messages"
     headers = {"Authorization": f"Bearer {WA_TOKEN}", "Content-Type": "application/json"}
     payload = {
@@ -125,7 +153,7 @@ def send_image_with_buttons(phone, image_url, caption, buttons):
     r = requests.post(url, json=payload, headers=headers)
     print(f"send_image_with_buttons response: {r.status_code} {r.text}")
 
-# ─── ГЛАВНОЕ МЕНЮ ───────────────────────────────────────────────
+# ─── ГЛАВНОЕ МЕНЮ ────────────────────────────────────────────────
 def send_main_menu(phone, lang="ru"):
     if lang == "ru":
         text = "🍓 Привет! Добро пожаловать в *Клубника в шоколаде*!\n\nЧем могу помочь?"
@@ -144,25 +172,82 @@ def send_main_menu(phone, lang="ru"):
     send_buttons(phone, text, buttons)
     set_state(phone, "main_menu")
 
-# ─── КАТАЛОГ ────────────────────────────────────────────────────
+# ─── КАТАЛОГ: ВЫБОР ЦЕНОВОЙ КАТЕГОРИИ ────────────────────────────
 def send_catalog(phone, lang="ru"):
-    items = []
-    for item in CATALOG:
-        name = item["name"] if lang == "ru" else item["name_kz"]
-        price_str = f"{item['price']} тг" if item["price"] else "по запросу"
-        items.append({
-            "id": f"cat_{item['id']}",
-            "title": name[:24],
-            "description": f"{price_str} / {item['unit']}"
+    """Показать 4 ценовые категории списком"""
+    rows = []
+    for cat in PRICE_CATEGORIES:
+        title = cat["title"] if lang == "ru" else cat["title_kz"]
+        count = sum(1 for i in CATALOG if cat["filter"](i["price"]))
+        rows.append({
+            "id":          cat["id"],
+            "title":       title[:24],
+            "description": f"{count} товар(а)" if lang == "ru" else f"{count} тауар"
         })
 
-    sections = [{"title": "🍓 Наши товары" if lang == "ru" else "🍓 Біздің тауарлар", "rows": items}]
-    body = "Выберите товар для подробной информации 👇" if lang == "ru" else "Толығырақ білу үшін тауарды таңдаңыз 👇"
-    btn_label = "Открыть каталог" if lang == "ru" else "Каталогты ашу"
+    sections  = [{"title": "Выберите диапазон цен 👇" if lang == "ru" else "Баға диапазонын таңдаңыз 👇", "rows": rows}]
+    body      = "🍓 *Каталог*\n\nВыберите ценовую категорию:" if lang == "ru" else "🍓 *Каталог*\n\nБаға санатын таңдаңыз:"
+    btn_label = "Выбрать цену" if lang == "ru" else "Бағаны таңдау"
     send_list(phone, body, btn_label, sections)
     set_state(phone, "catalog")
 
-# ─── ДЕТАЛИ ТОВАРА ──────────────────────────────────────────────
+# ─── КАТАЛОГ: ТОВАРЫ ПО ЦЕНОВОЙ КАТЕГОРИИ ────────────────────────
+def send_catalog_by_price(phone, category_id, lang="ru"):
+    """Показать карточки товаров выбранной ценовой категории"""
+    cat = next((c for c in PRICE_CATEGORIES if c["id"] == category_id), None)
+    if not cat:
+        send_catalog(phone, lang)
+        return
+
+    items     = [i for i in CATALOG if cat["filter"](i["price"])]
+    cat_title = cat["title"] if lang == "ru" else cat["title_kz"]
+
+    if not items:
+        msg = f"В категории {cat_title} пока нет товаров." if lang == "ru" else f"{cat_title} санатында тауар жоқ."
+        send_text(phone, msg)
+        send_catalog(phone, lang)
+        return
+
+    send_text(phone, f"📂 *{cat_title}*")
+
+    for item in items:
+        name      = item["name"] if lang == "ru" else item["name_kz"]
+        price_str = f"{item['price']} тг" if item["price"] else ("по запросу" if lang == "ru" else "сұрау бойынша")
+        photo_url = item.get("photo")
+
+        if lang == "ru":
+            caption = f"*{name}*\n💰 {price_str} / {item['unit']}"
+            buttons = [
+                {"id": f"buy_{item['id']}", "title": "🛒 Заказать"},
+                {"id": f"cat_{item['id']}", "title": "ℹ️ Подробнее"},
+            ]
+        else:
+            caption = f"*{name}*\n💰 {price_str} / {item['unit']}"
+            buttons = [
+                {"id": f"buy_{item['id']}", "title": "🛒 Тапсырыс"},
+                {"id": f"cat_{item['id']}", "title": "ℹ️ Толығырақ"},
+            ]
+
+        if photo_url:
+            send_image_with_buttons(phone, photo_url, caption, buttons)
+        else:
+            send_buttons(phone, caption, buttons)
+
+    # Кнопка назад
+    if lang == "ru":
+        send_buttons(phone, "◀️ Вернуться к категориям или в меню:", [
+            {"id": "catalog",   "title": "📦 Все категории"},
+            {"id": "main_menu", "title": "🏠 Главное меню"},
+        ])
+    else:
+        send_buttons(phone, "◀️ Санаттарға немесе мәзірге оралу:", [
+            {"id": "catalog",   "title": "📦 Барлық санат"},
+            {"id": "main_menu", "title": "🏠 Басты мәзір"},
+        ])
+
+    set_state(phone, "catalog")
+
+# ─── ДЕТАЛИ ТОВАРА ───────────────────────────────────────────────
 def send_item_detail(phone, item_id, lang="ru"):
     item = next((i for i in CATALOG if i["id"] == item_id), None)
     if not item:
@@ -176,13 +261,13 @@ def send_item_detail(phone, item_id, lang="ru"):
         caption = f"*{name}*\n\n💰 Цена: {price_str}\n📦 Объём: {item['unit']}\n\nХотите заказать?"
         buttons = [
             {"id": f"buy_{item['id']}", "title": "🛒 Заказать"},
-            {"id": "catalog",           "title": "◀️ Назад"},
+            {"id": "catalog",           "title": "◀️ К категориям"},
         ]
     else:
         caption = f"*{name}*\n\n💰 Баға: {price_str}\n📦 Көлемі: {item['unit']}\n\nТапсырыс бергіңіз келе ме?"
         buttons = [
             {"id": f"buy_{item['id']}", "title": "🛒 Тапсырыс"},
-            {"id": "catalog",           "title": "◀️ Артқа"},
+            {"id": "catalog",           "title": "◀️ Санаттарға"},
         ]
 
     if photo_url:
@@ -190,14 +275,14 @@ def send_item_detail(phone, item_id, lang="ru"):
     else:
         send_buttons(phone, caption, buttons)
 
-# ─── СБОР ЗАКАЗА ────────────────────────────────────────────────
+# ─── СБОР ЗАКАЗА ─────────────────────────────────────────────────
 def start_order(phone, lang="ru", item_id=None):
     session = get_session(phone)
     if item_id:
         item = next((i for i in CATALOG if i["id"] == item_id), None)
         if item:
             session["order"]["product"] = item["name"] if lang == "ru" else item["name_kz"]
-            session["order"]["price"] = item["price"]
+            session["order"]["price"]   = item["price"]
 
     if lang == "ru":
         send_text(phone, "📝 Оформляем заказ!\n\nКак вас зовут?")
@@ -207,29 +292,29 @@ def start_order(phone, lang="ru", item_id=None):
 
 def ask_delivery(phone, lang="ru"):
     if lang == "ru":
-        body = "Как получите заказ?"
+        body    = "Как получите заказ?"
         buttons = [
-            {"id": "delivery",  "title": "🚗 Доставка"},
-            {"id": "pickup",    "title": "🏪 Самовывоз"},
+            {"id": "delivery", "title": "🚗 Доставка"},
+            {"id": "pickup",   "title": "🏪 Самовывоз"},
         ]
     else:
-        body = "Тапсырысты қалай аласыз?"
+        body    = "Тапсырысты қалай аласыз?"
         buttons = [
-            {"id": "delivery",  "title": "🚗 Жеткізу"},
-            {"id": "pickup",    "title": "🏪 Өзі алу"},
+            {"id": "delivery", "title": "🚗 Жеткізу"},
+            {"id": "pickup",   "title": "🏪 Өзі алу"},
         ]
     send_buttons(phone, body, buttons)
     set_state(phone, "order_delivery")
 
 def ask_payment(phone, lang="ru"):
     if lang == "ru":
-        body = "Способ оплаты?"
+        body    = "Способ оплаты?"
         buttons = [
             {"id": "pay_cash",  "title": "💵 Наличные"},
             {"id": "pay_kaspi", "title": "📱 Kaspi Pay"},
         ]
     else:
-        body = "Төлем тәсілі?"
+        body    = "Төлем тәсілі?"
         buttons = [
             {"id": "pay_cash",  "title": "💵 Қолма-қол"},
             {"id": "pay_kaspi", "title": "📱 Kaspi Pay"},
@@ -238,9 +323,8 @@ def ask_payment(phone, lang="ru"):
     set_state(phone, "order_payment")
 
 def confirm_order(phone, lang="ru"):
-    session = get_session(phone)
-    order = session["order"]
-
+    session  = get_session(phone)
+    order    = session["order"]
     product  = order.get("product", "—")
     name     = order.get("name", "—")
     phone_no = order.get("phone", "—")
@@ -285,7 +369,7 @@ def confirm_order(phone, lang="ru"):
 
 def finalize_order(phone, lang="ru"):
     session = get_session(phone)
-    order = session["order"]
+    order   = session["order"]
     notify_manager(phone, order)
 
     if lang == "ru":
@@ -296,14 +380,14 @@ def finalize_order(phone, lang="ru"):
     sessions[phone]["order"] = {}
     set_state(phone, "start")
 
-# ─── УВЕДОМЛЕНИЕ МЕНЕДЖЕРУ В TELEGRAM ──────────────────────────
+# ─── УВЕДОМЛЕНИЕ МЕНЕДЖЕРУ В TELEGRAM ───────────────────────────
 def notify_manager(phone, order):
-    product  = order.get("product", "—")
-    name     = order.get("name", "—")
-    delivery = order.get("delivery", "—")
-    address  = order.get("address", "")
-    payment  = order.get("payment", "—")
-    price    = order.get("price")
+    product   = order.get("product", "—")
+    name      = order.get("name", "—")
+    delivery  = order.get("delivery", "—")
+    address   = order.get("address", "")
+    payment   = order.get("payment", "—")
+    price     = order.get("price")
     price_str = f"{price} тг" if price else "по запросу"
     time_str  = datetime.now().strftime("%d.%m.%Y %H:%M")
 
@@ -322,7 +406,7 @@ def notify_manager(phone, order):
         json={"chat_id": TG_MANAGER_ID, "text": msg, "parse_mode": "Markdown"}
     )
 
-# ─── AI ОТВЕТ (Claude) ──────────────────────────────────────────
+# ─── AI ОТВЕТ (Claude) ───────────────────────────────────────────
 def get_ai_response(question, lang="ru"):
     catalog_text = "\n".join([
         f"- {i['name']} ({i['name_kz']}): {i['price'] or 'по запросу'} тг / {i['unit']}"
@@ -352,7 +436,7 @@ def get_ai_response(question, lang="ru"):
     )
     return response.content[0].text
 
-# ─── ОПРЕДЕЛЕНИЕ ЯЗЫКА ──────────────────────────────────────────
+# ─── ОПРЕДЕЛЕНИЕ ЯЗЫКА ───────────────────────────────────────────
 def detect_lang(text):
     text_lower = text.lower()
 
@@ -369,7 +453,7 @@ def detect_lang(text):
     ru_words = {"привет", "спасибо", "да", "нет", "как", "есть", "хорошо",
                 "заказ", "каталог", "цена", "купить", "доставка"}
 
-    words = set(text_lower.split())
+    words   = set(text_lower.split())
     kz_hits = len(words & kz_words)
     ru_hits = len(words & ru_words)
 
@@ -380,7 +464,7 @@ def detect_lang(text):
 
     return None
 
-# ─── ОСНОВНАЯ ЛОГИКА ДИАЛОГА ────────────────────────────────────
+# ─── ОСНОВНАЯ ЛОГИКА ДИАЛОГА ─────────────────────────────────────
 def handle_message(phone, text=None, button_id=None):
     session = get_session(phone)
     state   = session["state"]
@@ -399,6 +483,10 @@ def handle_message(phone, text=None, button_id=None):
             return
         if button_id == "catalog":
             send_catalog(phone, lang)
+            return
+        # Выбрана ценовая категория
+        if button_id in [c["id"] for c in PRICE_CATEGORIES]:
+            send_catalog_by_price(phone, button_id, lang)
             return
         if button_id == "manager":
             if lang == "ru":
@@ -454,10 +542,10 @@ def handle_message(phone, text=None, button_id=None):
             return
 
         if state == "order_name":
-            session["order"]["name"] = text
+            session["order"]["name"]  = text
             session["order"]["phone"] = phone
             if lang == "ru":
-                send_text(phone, f"Приятно познакомиться, {text}! 😊\n\nКакой товар хотите заказать? (напишите название или нажмите /catalog)")
+                send_text(phone, f"Приятно познакомиться, {text}! 😊\n\nКакой товар хотите заказать? (напишите название)")
             else:
                 send_text(phone, f"Танысқаныма қуаныштымын, {text}! 😊\n\nҚандай тауар тапсырғыңыз келеді?")
             set_state(phone, "order_product")
@@ -490,7 +578,7 @@ def handle_message(phone, text=None, button_id=None):
                 {"id": "manager", "title": "👨‍💼 Менеджер"},
             ])
 
-# ─── WEBHOOK ENDPOINTS ──────────────────────────────────────────
+# ─── WEBHOOK ENDPOINTS ───────────────────────────────────────────
 @app.route("/webhook", methods=["GET"])
 def verify():
     if request.args.get("hub.verify_token") == VERIFY_TOKEN:
